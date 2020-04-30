@@ -17,6 +17,22 @@ class Neuron:
         self.output_size = output_size
         self.beta = np.random.random_sample(input_size + 1) * 2 - 1 #beta_(0...input_size)
 
+    def comb_lin(self, Zc):
+        """
+        Returns the sum of beta * Z
+        ----
+        Input :
+            Zc : array of length n_c -> outputs of the previous layer
+        ----
+        output:
+            out : float -> sum of beta * Z
+        """
+
+        assert len(Zc) == self.input_size, "Input of size {} with neuron of input size {}".format(len(Zc), self.input_size)
+        return self.beta[0] + np.dot(Zc, self.beta[1:]) #sum of beta * Z
+
+
+
     def compute(self, Zc):
         """
         Given the outputs of the previous layer, computes the output of
@@ -29,7 +45,6 @@ class Neuron:
             out : float -> output of the neuron
         """
 
-        assert len(Zc) == self.input_size, "Input of size {} with neuron of input size {}".format(len(Zc), self.input_size)
-        linear_comb = self.beta[0] + np.dot(Zc, self.beta[1:]) #sum of beta * Z
+        linear_comb = self.comb_lin(Zc)
         out = 1 / (1 + np.exp(linear_comb))
         return  out
