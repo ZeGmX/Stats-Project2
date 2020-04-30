@@ -1,31 +1,36 @@
 import numpy as np
 
 class Neuron:
-    def __init__(self, input_size, output_size): #output_size useful ?
+    """
+    fields:
+        input_size: int
+        beta: list of the coefficitents used in the linear combination of the
+            outputs of the previous layer
+    """
+
+    def __init__(self, input_size):
         """
         Creates a Neuron object with random coefficients
         ----
         input:
-            input_size : int -> n_c where c is the layer of the neuron
-            output_size : int -> n_(c + 1)
+            input_size: int -> n_c where c is the layer of the neuron
         ----
         output:
             void
         """
 
         self.input_size = input_size
-        self.output_size = output_size
         self.beta = np.random.random_sample(input_size + 1) * 2 - 1 #beta_(0...input_size)
 
     def comb_lin(self, Zc):
         """
         Returns the sum of beta * Z
         ----
-        Input :
-            Zc : array of length n_c -> outputs of the previous layer
+        Input:
+            Zc: array of length n_c -> outputs of the previous layer
         ----
         output:
-            out : float -> sum of beta * Z
+            out: float -> sum of beta * Z
         """
 
         assert len(Zc) == self.input_size, "Input of size {} with neuron of input size {}".format(len(Zc), self.input_size)
