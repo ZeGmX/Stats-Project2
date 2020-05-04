@@ -99,7 +99,7 @@ class NeuralNetwork:
         res = sum((Y_hat - expected_output) ** 2)
         return res
 
-    def error(self):
+    def tota_error(self):
         """
         Returns the error of one line
         ----
@@ -112,18 +112,51 @@ class NeuralNetwork:
 
         return sum(self.errors)
 
-    def deriv(self, i, j, k, c):
+    def deriv_error_i(self, j, k, c, expected_output):
         """
         Returns the derivative of R_i with respect to beta_(j, k)^c
         ----
         input:
-            i, j, k, c: int
+            j, k, c: int
+            expected_output: float array of length n_C -> the outputs expected
+                for the current inputs
         ----
         output:
             res: float -> the derivative
         """
 
-        pass #TODO
+        C = len(self.format)
+        last_output = self.Zlines[-1]
+        Y_hat = - np.log(1 / last_output - 1) #sigma shouldn't be used for the last line
+
+        if c == C - 1: #last line
+            res = - 2 * (expected_output[k] - Y_hat[k]) * self.Zlines[c - 1][j]
+        else:
+            nC = self.format[-1]
+            ncm1 = self.format[-2]
+            res = sum(sum(-2 * (expect_output[l] - Y_hat[l]) * self.neuron_layers[C - 1][l].beta[m] * self.derivZ(m, C - 2, j, k, c)) for l in range(nc))
+            #Should be checked...
+        return res
+
+    def derive_Z(self, m, cz, j, k, cb):
+        """
+        Returns the derivative of Z_m^cz with respect to beta_(j, k)^cb
+        ----
+        input:
+            m, cz, j, k, cb: int
+        ----
+        output:
+            res: float -> the derivative
+        """
+
+        if cb == cz - 1:
+            if k != m:
+                res = 0
+            else:
+                res = self.Z_layers[cz - 1][j] * self.Z_layers[cz][m] * (1 - self.Z_layers[cz][m]) #sigma'= sigma * (1 - sigma)
+        else:
+            res = sum(self.neuron_layers[cz][m].beta[p] * self.deriv_Z(p, cz - 1, j, k, cb) for p in range(self.format[cz]))
+        return res
 
     def compute_derivatives(self):
         """
@@ -160,7 +193,7 @@ class NeuralNetwork:
         """
 
         C = len(self.format)
-        out_size = len(self.errors)
+        out_size = self.format[-1]
         self.compute_derivatives()
         for c in range(C):
             nc = len(self.neuron_layers[c][0].beta)
