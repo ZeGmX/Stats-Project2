@@ -75,24 +75,30 @@ class NeuralNetwork:
             void
         """
 
+        for i in range(len(self.derivative)):
+            for j in range(len(self.derivative[i])):
+                for k in range(len(self.derivative[i][j])):
+                    self.derivative[i][j][k] = 0
+
         for i in range(len(database)):
             X_i = database[i]
             Y_i = outputs[i]
             self.compute_one(X_i)
+            self.compute_derivatives()
             R_i = self.compute_error(Y_i)
             self.errors[i] = R_i
 
 
     def compute_error(self, expected_output):
-    """
-    Returns the current error
-    ----
-    input:
-        expect_output: float array of size n_C -> y
-    ----
-    output:
-        res: float -> R_i(theta)
-    """
+        """
+        Returns the current error
+        ----
+        input:
+            expected_output: float array of size n_C -> y
+        ----
+        output:
+            res: float -> R_i(theta)
+        """
 
         last_output = self.Zlines[-1]
         Y_hat = - np.log(1 / last_output - 1) #sigma shouldn't be used for the last line
@@ -126,19 +132,19 @@ class NeuralNetwork:
         """
 
         C = len(self.format)
-        last_output = self.Zlines[-1]
+        last_output = self.Z_layers[-1]
         Y_hat = - np.log(1 / last_output - 1) #sigma shouldn't be used for the last line
 
         if c == C - 1: #last line
-            res = - 2 * (expected_output[k] - Y_hat[k]) * self.Zlines[c - 1][j]
+            res = - 2 * (expected_output[k] - Y_hat[k]) * self.Z_layers[c - 1][j]
         else:
             nC = self.format[-1]
             ncm1 = self.format[-2]
-            res = sum(sum(-2 * (expect_output[l] - Y_hat[l]) * self.neuron_layers[C - 1][l].beta[m] * self.derivZ(m, C - 2, j, k, c)) for l in range(nc))
+            res = sum(sum(-2 * (expected_output[l] - Y_hat[l]) * self.neuron_layers[C - 1][l].beta[m] * self.deriv_Z(m, C - 2, j, k, c) for m in range(ncm1)) for l in range(nC))
             #Should be checked...
         return res
 
-    def derive_Z(self, m, cz, j, k, cb):
+    def deriv_Z(self, m, cz, j, k, cb):
         """
         Returns the derivative of Z_m^cz with respect to beta_(j, k)^cb
         ----
@@ -153,32 +159,34 @@ class NeuralNetwork:
             if k != m:
                 res = 0
             else:
+                print(m, cz, j, k, cb)
                 res = self.Z_layers[cz - 1][j] * self.Z_layers[cz][m] * (1 - self.Z_layers[cz][m]) #sigma'= sigma * (1 - sigma)
         else:
             res = sum(self.neuron_layers[cz][m].beta[p] * self.deriv_Z(p, cz - 1, j, k, cb) for p in range(self.format[cz]))
         return res
 
-    def compute_derivatives(self):
+    def compute_derivatives(self, expected_output):
         """
-        Stores the derivatives of R with respect of every coefficient
-        We need that because the change of a coefficient should not impact the
-        change of another one
+        Adds the derivative of R_i with respect of every coefficient to the
+        derivative matrix
         ----
         input:
-            void
+            expected_output: float array of length n_C -> the outputs expected
+                for the current inputs
         ----
         output:
             void
         """
 
         C = len(self.format)
+        out_size = self.format[-1]
         for c in range(C):
             nc = len(self.neuron_layers[c][0].beta)
             ncp1 = self.format[c]
             for k in range(ncp1):
                 neuron = self.neuron_layers[c][k]
                 for j in range(nc):
-                    self.derivatives[c][k][j] = sum(self.deriv(i, j, k, c) for i in range(out_size))
+                    self.derivatives[c][k][j] += self.deriv_error_i(j, k, c, expected_output)
 
 
     def update_coeff(self):
@@ -202,3 +210,6 @@ class NeuralNetwork:
                 neuron = self.neuron_layers[c][k]
                 for j in range(nc):
                     neuron.beta[j] -= self.learning_Rate * self.derivatives[c][k][j] #beta_(j, k)^c = beta_(j, k)^c - eta * dR/dbeta_(j, k)^c
+
+a = NeuralNetwork([2, 3, 2], 4)
+a.compute_derivatives([0, 0, 0])
