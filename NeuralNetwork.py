@@ -1,5 +1,5 @@
-from Neuron import Neuron
 import numpy as np
+from Neuron import Neuron
 
 class NeuralNetwork:
     """
@@ -31,10 +31,10 @@ class NeuralNetwork:
         C = len(format)
         input_sizes = [p] + format
         self.neuron_layers = [[Neuron(input_sizes[layer]) for _ in range(format[layer])] for layer in range(C)]
-        self.Z_layers = [np.array([0 for _ in range(format[layer])]) for layer in range(C)]
-        self.learning_Rate = 0.5 #Arbitrary
+        self.Z_layers = [np.array([0 for _ in range(format[layer])], dtype=np.double) for layer in range(C)]
+        self.learning_Rate = 0.1 #Arbitrary
         self.current_input = [0 for _ in range(p)] #Useful ?
-        self.errors = [0 for _ in range(format[-1])]
+        self.errors = [0]
         self.derivatives = [[[0 for _ in range(input_sizes[layer])] for _ in range(format[layer])] for layer in range(C)]
 
     def compute_one(self, input):
@@ -56,12 +56,17 @@ class NeuralNetwork:
             neuron = self.neuron_layers[0][j]
             self.Z_layers[0][j] = neuron.compute_output(input)
 
-        for c in range(1, C):
+        for c in range(1, C - 1):
             nc = self.format[c]
             layer_input = self.Z_layers[c - 1]
             for j in range(nc):
                 neuron = self.neuron_layers[c][j]
                 self.Z_layers[c][j] = neuron.compute_output(layer_input)
+
+        for j in range(self.format[-1]):
+            neuron = self.neuron_layers[-1][j]
+            self.Z_layers[-1][j] = neuron.comb_lin(self.Z_layers[-2])
+
 
 
     def compute_all(self, database, outputs):
@@ -76,17 +81,21 @@ class NeuralNetwork:
             void
         """
 
+        N = len(database)
+        self.errors = [0 for _ in range(N)]
+
         #Resets the derivative matrix
-        for i in range(len(self.derivative)):
-            for j in range(len(self.derivative[i])):
-                for k in range(len(self.derivative[i][j])):
-                    self.derivative[i][j][k] = 0
+        for i in range(len(self.derivatives)):
+            for j in range(len(self.derivatives[i])):
+                for k in range(len(self.derivatives[i][j])):
+                    self.derivatives[i][j][k] = 0
 
         for i in range(len(database)):
             X_i = database[i]
             Y_i = outputs[i]
+            self.current_input = X_i
             self.compute_one(X_i)
-            self.compute_derivatives()
+            self.compute_derivatives(outputs[i])
             R_i = self.compute_error(Y_i)
             self.errors[i] = R_i
 
@@ -102,8 +111,9 @@ class NeuralNetwork:
             res: float -> R_i(theta)
         """
 
-        last_output = self.Zlines[-1]
-        Y_hat = - np.log(1 / last_output - 1) #sigma shouldn't be used for the last line
+        last_output = self.Z_layers[-1]
+        #Y_hat = - np.log(1. / last_output - 1.) #sigma shouldn't be used for the last line
+        Y_hat = self.Z_layers[-1]
         res = sum((Y_hat - expected_output) ** 2)
         return res
 
@@ -135,7 +145,8 @@ class NeuralNetwork:
 
         C = len(self.format)
         last_output = self.Z_layers[-1]
-        Y_hat = - np.log(1 / last_output - 1) #sigma shouldn't be used for the last line
+        #Y_hat = - np.log(1. / last_output - 1.) #sigma shouldn't be used for the last line
+        Y_hat = self.Z_layers[-1]
 
         if c == C - 1: #last line
             res = - 2 * (expected_output[k] - Y_hat[k]) * self.Z_layers[c - 1][j]
@@ -155,7 +166,7 @@ class NeuralNetwork:
         output:
             res: float -> the derivative
         """
-        print(m, cz, j, k, cb)
+
         if cb == cz:
             if k != m:
                 res = 0
@@ -165,7 +176,7 @@ class NeuralNetwork:
                 else:
                     res = self.Z_layers[cz - 1][j] * self.Z_layers[cz][m] * (1 - self.Z_layers[cz][m]) #sigma'= sigma * (1 - sigma)
         else: #cb < cz
-            res = sum(self.neuron_layers[cz][m].beta[p] * self.Z_layers[cz][m] * (1 - self.Z_layers[cz][m]) *self.deriv_Z(p, cz - 1, j, k, cb) for p in range(self.format[cz - 1]))
+            res = sum(self.neuron_layers[cz][m].beta[p] * self.Z_layers[cz][m] * (1 - self.Z_layers[cz][m]) * self.deriv_Z(p, cz - 1, j, k, cb) for p in range(self.format[cz - 1]))
         return res
 
     def compute_derivatives(self, expected_output):
