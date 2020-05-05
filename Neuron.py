@@ -34,11 +34,11 @@ class Neuron:
         """
 
         assert len(Zc) == self.input_size, "Input of size {} with neuron of input size {}".format(len(Zc), self.input_size)
-        return np.dot(Zc, self.beta[1:]) #sum of beta * Z
+        return np.dot(Zc, self.beta) #sum of beta * Z
 
 
 
-    def compute(self, Zc):
+    def compute_output(self, Zc):
         """
         Given the outputs of the previous layer, computes the output of
         this neuron
@@ -51,5 +51,5 @@ class Neuron:
         """
 
         linear_comb = self.comb_lin(Zc)
-        out = 1 / (1 + np.exp(- linear_comb))
+        out = 1. / (1. + np.exp(- linear_comb))
         return  out
