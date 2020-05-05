@@ -51,5 +51,5 @@ class Neuron:
         """
 
         linear_comb = self.comb_lin(Zc)
-        out = 1 / (1 + np.exp(linear_comb))
+        out = 1 / (1 + np.exp(- linear_comb))
         return  out
