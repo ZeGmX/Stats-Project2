@@ -20,7 +20,7 @@ class Neuron:
         """
 
         self.input_size = input_size
-        self.beta = np.random.random_sample(input_size + 1) * 2 - 1 #beta_(0...input_size)
+        self.beta = np.random.random_sample(input_size) * 2 - 1 #beta_(1...input_size)
 
     def comb_lin(self, Zc):
         """
@@ -34,7 +34,7 @@ class Neuron:
         """
 
         assert len(Zc) == self.input_size, "Input of size {} with neuron of input size {}".format(len(Zc), self.input_size)
-        return self.beta[0] + np.dot(Zc, self.beta[1:]) #sum of beta * Z
+        return np.dot(Zc, self.beta[1:]) #sum of beta * Z
 
 
 

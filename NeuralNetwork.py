@@ -29,13 +29,13 @@ class NeuralNetwork:
 
         self.format = format
         C = len(format)
-        format_include_input = [p] + format
-        self.neuron_layers = [[Neuron(format_include_input[layer]) for _ in range(format[layer])] for layer in range(C)]
+        input_sizes = [p] + format
+        self.neuron_layers = [[Neuron(input_sizes[layer]) for _ in range(format[layer])] for layer in range(C)]
         self.Z_layers = [np.array([0 for _ in range(format[layer])]) for layer in range(C)]
         self.learning_Rate = 0.5 #Arbitrary
         self.current_input = [0 for _ in range(p)] #Useful ?
         self.errors = [0 for _ in range(format[-1])]
-        self.derivatives = [[[0 for _ in range(format_include_input[layer])] for _ in range(format[layer])] for layer in range(C)]
+        self.derivatives = [[[0 for _ in range(input_sizes[layer])] for _ in range(format[layer])] for layer in range(C)]
 
     def compute_one(self, input):
         """
@@ -51,6 +51,7 @@ class NeuralNetwork:
         current_input = input[:]
         C = len(self.format)
         n0 = self.format[0]
+
         for j in range(n0):
             neuron = self.neuron_layers[0][j]
             self.Z_layers[0][j] = neuron.compute_output(input)
@@ -75,6 +76,7 @@ class NeuralNetwork:
             void
         """
 
+        #Resets the derivative matrix
         for i in range(len(self.derivative)):
             for j in range(len(self.derivative[i])):
                 for k in range(len(self.derivative[i][j])):
@@ -105,7 +107,7 @@ class NeuralNetwork:
         res = sum((Y_hat - expected_output) ** 2)
         return res
 
-    def tota_error(self):
+    def total_error(self):
         """
         Returns the error of one line
         ----
@@ -137,11 +139,10 @@ class NeuralNetwork:
 
         if c == C - 1: #last line
             res = - 2 * (expected_output[k] - Y_hat[k]) * self.Z_layers[c - 1][j]
-        else:
+        else: #c < C - 1
             nC = self.format[-1]
-            ncm1 = self.format[-2]
-            res = sum(sum(-2 * (expected_output[l] - Y_hat[l]) * self.neuron_layers[C - 1][l].beta[m] * self.deriv_Z(m, C - 2, j, k, c) for m in range(ncm1)) for l in range(nC))
-            #Should be checked...
+            nCm1 = self.format[-2]
+            res = sum(sum(-2 * (expected_output[l] - Y_hat[l]) * self.neuron_layers[C - 1][l].beta[m] * self.deriv_Z(m, C - 2, j, k, c) for m in range(nCm1)) for l in range(nC))
         return res
 
     def deriv_Z(self, m, cz, j, k, cb):
@@ -154,15 +155,17 @@ class NeuralNetwork:
         output:
             res: float -> the derivative
         """
-
-        if cb == cz - 1:
+        print(m, cz, j, k, cb)
+        if cb == cz:
             if k != m:
                 res = 0
             else:
-                print(m, cz, j, k, cb)
-                res = self.Z_layers[cz - 1][j] * self.Z_layers[cz][m] * (1 - self.Z_layers[cz][m]) #sigma'= sigma * (1 - sigma)
-        else:
-            res = sum(self.neuron_layers[cz][m].beta[p] * self.deriv_Z(p, cz - 1, j, k, cb) for p in range(self.format[cz]))
+                if cz == 0:
+                    res = self.current_input[j] * self.Z_layers[cz][m] * (1 - self.Z_layers[cz][m]) #sigma'= sigma * (1 - sigma)
+                else:
+                    res = self.Z_layers[cz - 1][j] * self.Z_layers[cz][m] * (1 - self.Z_layers[cz][m]) #sigma'= sigma * (1 - sigma)
+        else: #cb < cz
+            res = sum(self.neuron_layers[cz][m].beta[p] * self.Z_layers[cz][m] * (1 - self.Z_layers[cz][m]) *self.deriv_Z(p, cz - 1, j, k, cb) for p in range(self.format[cz - 1]))
         return res
 
     def compute_derivatives(self, expected_output):
@@ -179,13 +182,12 @@ class NeuralNetwork:
         """
 
         C = len(self.format)
-        out_size = self.format[-1]
         for c in range(C):
-            nc = len(self.neuron_layers[c][0].beta)
-            ncp1 = self.format[c]
-            for k in range(ncp1):
+            input_size = len(self.neuron_layers[c][0].beta)
+            nc = self.format[c]
+            for k in range(nc):
                 neuron = self.neuron_layers[c][k]
-                for j in range(nc):
+                for j in range(input_size):
                     self.derivatives[c][k][j] += self.deriv_error_i(j, k, c, expected_output)
 
 
@@ -201,15 +203,10 @@ class NeuralNetwork:
         """
 
         C = len(self.format)
-        out_size = self.format[-1]
-        self.compute_derivatives()
         for c in range(C):
-            nc = len(self.neuron_layers[c][0].beta)
-            ncp1 = self.format[c]
-            for k in range(ncp1):
+            input_size = self.neuron_layers[c][0].input_size
+            nc = self.format[c]
+            for k in range(nc):
                 neuron = self.neuron_layers[c][k]
-                for j in range(nc):
+                for j in range(input_size):
                     neuron.beta[j] -= self.learning_Rate * self.derivatives[c][k][j] #beta_(j, k)^c = beta_(j, k)^c - eta * dR/dbeta_(j, k)^c
-
-a = NeuralNetwork([2, 3, 2], 4)
-a.compute_derivatives([0, 0, 0])
