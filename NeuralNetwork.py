@@ -32,7 +32,7 @@ class NeuralNetwork:
         input_sizes = [p] + format
         self.neuron_layers = [[Neuron(input_sizes[layer]) for _ in range(format[layer])] for layer in range(C)]
         self.Z_layers = [np.array([0 for _ in range(format[layer])], dtype=np.double) for layer in range(C)]
-        self.learning_Rate = 0.1 #Arbitrary
+        self.learning_Rate = 0.5 #Arbitrary
         self.current_input = [0 for _ in range(p)] #Useful ?
         self.errors = [0]
         self.derivatives = [[[0 for _ in range(input_sizes[layer])] for _ in range(format[layer])] for layer in range(C)]
@@ -84,6 +84,8 @@ class NeuralNetwork:
         N = len(database)
         self.errors = [0 for _ in range(N)]
 
+        self.learning_Rate = 0.5 / len(database)
+
         #Resets the derivative matrix
         for i in range(len(self.derivatives)):
             for j in range(len(self.derivatives[i])):
@@ -112,7 +114,6 @@ class NeuralNetwork:
         """
 
         last_output = self.Z_layers[-1]
-        #Y_hat = - np.log(1. / last_output - 1.) #sigma shouldn't be used for the last line
         Y_hat = self.Z_layers[-1]
         res = sum((Y_hat - expected_output) ** 2)
         return res
@@ -221,3 +222,42 @@ class NeuralNetwork:
                 neuron = self.neuron_layers[c][k]
                 for j in range(input_size):
                     neuron.beta[j] -= self.learning_Rate * self.derivatives[c][k][j] #beta_(j, k)^c = beta_(j, k)^c - eta * dR/dbeta_(j, k)^c
+
+
+    def train(self, database, outputs, n):
+        """
+        Trains the network on the database
+        ----
+        input:
+            database: float array of shape (N, p)
+            outputs: float array of shape (N, n_C)
+            n: int -> how many times the database will go through the network
+        ----
+        output:
+            error_list: float array of length n -> the error after each turn
+        """
+
+        error_list = []
+        for _ in range(n):
+            self.compute_all(database, outputs)
+            self.update_coeff()
+            error_list.append(self.total_error())
+        return error_list
+
+
+    def predict(self, database):
+        """
+        Predicts the outputs for each line of the database
+        ---
+        input:
+            database: float array of shape (N, p)
+        ----
+        output:
+            prediction: float array of shape (N, n_C)
+        """
+
+        prediction = []
+        for line in database:
+            self.compute_one(line)
+            prediction.append(np.copy(self.Z_layers[-1]))
+        return prediction
