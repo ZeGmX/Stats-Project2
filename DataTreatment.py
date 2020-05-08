@@ -5,6 +5,16 @@ import matplotlib.pyplot as plt
 
 
 def set_to_True_False(prediction):
+    """
+    Given a prediction, determines if the mail should be considered a spam
+    ----
+    input:
+        prediction: float array of shape (N, 2)
+    ----
+    output:
+        res: bool array of length N
+    """
+
     N = len(prediction)
     res = np.zeros(N, dtype=np.bool)
     for k in range(N):
@@ -15,6 +25,23 @@ def set_to_True_False(prediction):
 
 
 def full_test(train_size=100, number_of_columns=57, n=20, format=[5, 3, 2]):
+    """
+    Trains a network using part of the database, draws the evolution of the
+    error and predicts the outcome of the other part of the database before
+    computing the success ratio
+    ----
+    input:
+        train_size: int -> number of lines of the database we want to use for
+            the training part
+        number_of_columns: int -> number of columns of the database we want to use
+        n: int -> how many times the database sample will go through the network
+            during the training part
+        format: int array -> format of the neural network
+    ----
+    output:
+        void
+    """
+
     sample_rows = np.random.choice(len(spam_data), train_size, replace=False)
     sample_columns = np.random.choice(58, number_of_columns, replace=False)
     inputs_train = spam_data[sample_rows][:, sample_columns]
@@ -42,7 +69,8 @@ def full_test(train_size=100, number_of_columns=57, n=20, format=[5, 3, 2]):
 
 
 if __name__ == "__main__":
-    file = open(r"D:\Téléchargements\ProjetStats2-master\spambase.data", 'r')
+    #file = open(r"D:\Téléchargements\ProjetStats2-master\spambase.data", 'r')
+    file = open(r"spambase.data", 'r')
     spam_data = []
     line = file.readline()
     while line != "":

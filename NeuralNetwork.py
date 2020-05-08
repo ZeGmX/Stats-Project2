@@ -9,7 +9,7 @@ class NeuralNetwork:
             -> a line represents a layer of neurons
         Z_layers: float array array -> stores the current output of each Neurons
         learning_Rate: float -> learning Rate used for backpropagation
-        current_input: float array of size p -> the input being computed   #Useful ?
+        current_input: float array of size p -> the input being computed
         errors: float array of size n_C -> the error of each line
         derivatives: float array -> derivatives[c][k][j] = dR / dbeta_(j, k)^c
     """
@@ -33,7 +33,7 @@ class NeuralNetwork:
         self.neuron_layers = [[Neuron(input_sizes[layer]) for _ in range(format[layer])] for layer in range(C)]
         self.Z_layers = [np.array([0 for _ in range(format[layer])], dtype=np.double) for layer in range(C)]
         self.learning_Rate = 0.5 #Arbitrary
-        self.current_input = [0 for _ in range(p)] #Useful ?
+        self.current_input = [0 for _ in range(p)]
         self.errors = [0]
         self.derivatives = [[[0 for _ in range(input_sizes[layer])] for _ in range(format[layer])] for layer in range(C)]
 
@@ -52,18 +52,18 @@ class NeuralNetwork:
         C = len(self.format)
         n0 = self.format[0]
 
-        for j in range(n0):
+        for j in range(n0): #First layer uses the inputs
             neuron = self.neuron_layers[0][j]
             self.Z_layers[0][j] = neuron.compute_output(input)
 
-        for c in range(1, C - 1):
+        for c in range(1, C - 1): #The other layers uses the outputs of the previous layer
             nc = self.format[c]
             layer_input = self.Z_layers[c - 1]
             for j in range(nc):
                 neuron = self.neuron_layers[c][j]
                 self.Z_layers[c][j] = neuron.compute_output(layer_input)
 
-        for j in range(self.format[-1]):
+        for j in range(self.format[-1]): #Last layer doesn't apply sigma
             neuron = self.neuron_layers[-1][j]
             self.Z_layers[-1][j] = neuron.comb_lin(self.Z_layers[-2])
 
